@@ -1,0 +1,478 @@
+import streamlit as st
+import streamlit.components.v1 as components
+import requests
+from datetime import datetime
+
+# -------------------------------
+# Basic Settings
+# -------------------------------
+
+st.set_page_config(
+    page_title="AIP-SM Dashboard",
+    page_icon="🤖",
+    layout="wide"
+)
+
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyupggsoyQTDI_DI1hBduBOjjksaRaMJ5YM9T0bJtrB6fAjCp9I0JPJl-Qo4PBj1xtS/exec"
+
+PRETEST_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeiN0A4MueCQCgWq_dzEeUrquULAX8dIoGanSOKpigzLIHtqg/viewform?embedded=true"
+POSTTEST_URL = "https://docs.google.com/forms/d/e/1FAIpQLScQhRPS0Ah4XQwgvWPwo1KdwTK0SJYnaJX59geplh-siym5SA/viewform?embedded=true"
+FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfztEhAKjtwR658RyBHA3v39l_CT3yAUsF5wbG2dsXCOlW0kQ/viewform?embedded=true"
+
+
+# -------------------------------
+# Helper Functions
+# -------------------------------
+
+def submit_to_google_sheet(sheet_name, row):
+    payload = {
+        "sheet_name": sheet_name,
+        "row": row
+    }
+
+    try:
+        response = requests.post(APPS_SCRIPT_URL, json=payload, timeout=10)
+        if response.status_code == 200:
+            return True, "Submitted successfully."
+        else:
+            return False, f"Submission failed. Status code: {response.status_code}"
+    except Exception as e:
+        return False, f"Error: {e}"
+
+
+def student_code_instruction():
+    st.info(
+        """
+        **Student Code Instruction**
+
+        Please create your Student Code using this format:
+
+        **AIP + last five digits of your mobile number**
+
+        Example: If your mobile number ends with **78456**, your Student Code will be **AIP78456**.
+
+        Please use the same Student Code in the pre-test, all dashboard activities, final portfolio, post-test, and feedback form.
+        """
+    )
+
+
+def common_student_fields():
+    student_code = st.text_input("Student Code")
+    programme = st.selectbox("Programme", ["B.Ed.", "M.Ed.", "Other"])
+    year = st.selectbox("Year", ["First Year", "Second Year", "Other"])
+    subject = st.text_input("Teaching Subject")
+    topic = st.text_input("Selected Topic")
+    return student_code, programme, year, subject, topic
+
+
+def module_form(sheet_name, prompt_label, ai_label, revised_label, reflection_label):
+    student_code_instruction()
+
+    with st.form(key=sheet_name):
+        student_code, programme, year, subject, topic = common_student_fields()
+
+        prompt = st.text_area(prompt_label, height=180)
+        ai_response = st.text_area(ai_label, height=220)
+        revised_output = st.text_area(revised_label, height=220)
+        reflection = st.text_area(reflection_label, height=160)
+
+        submitted = st.form_submit_button("Submit")
+
+        if submitted:
+            if not student_code or not subject or not topic:
+                st.error("Please fill Student Code, Subject, and Topic before submitting.")
+            else:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                row = [
+                    timestamp,
+                    student_code,
+                    programme,
+                    year,
+                    subject,
+                    topic,
+                    prompt,
+                    ai_response,
+                    revised_output,
+                    reflection
+                ]
+
+                success, message = submit_to_google_sheet(sheet_name, row)
+
+                if success:
+                    st.success("Your submission has been saved successfully.")
+                else:
+                    st.error(message)
+
+
+def embed_form(url, height=1200):
+    components.iframe(url, height=height, scrolling=True)
+
+
+# -------------------------------
+# Sidebar Navigation
+# -------------------------------
+
+st.sidebar.title("AIP-SM Dashboard")
+
+page = st.sidebar.radio(
+    "Go to",
+    [
+        "Home",
+        "Pre-Test",
+        "Module 1: Objective Prompting",
+        "Module 2: Activity Prompting",
+        "Module 3: Assessment Prompting",
+        "Module 4: Inclusive Prompting",
+        "Module 5: Ethical Verification",
+        "Final Portfolio",
+        "Post-Test",
+        "Feedback"
+    ]
+)
+
+
+# -------------------------------
+# Home Page
+# -------------------------------
+
+if page == "Home":
+    st.title("AIP-SM Dashboard")
+    st.subheader("AI Prompt Scaffolding Model for Pedagogical Design Readiness")
+
+    st.write(
+        """
+        Welcome to the AIP-SM Dashboard. This dashboard is designed to help pre-service teachers learn how to use AI tools 
+        meaningfully for pedagogical design.
+
+        Through this dashboard, you will complete module-wise activities related to:
+
+        - Objective prompting
+        - Activity prompting
+        - Assessment prompting
+        - Inclusive prompting
+        - Ethical verification and reflective revision
+
+        You will first complete the pre-test, then complete five modules, submit your final portfolio, complete the post-test, 
+        and finally submit the feedback form.
+        """
+    )
+
+    student_code_instruction()
+
+    st.warning(
+        """
+        Please complete the activities in sequence:
+
+        **Pre-Test → Module 1 → Module 2 → Module 3 → Module 4 → Module 5 → Final Portfolio → Post-Test → Feedback**
+        """
+    )
+
+
+# -------------------------------
+# Pre-Test Page
+# -------------------------------
+
+elif page == "Pre-Test":
+    st.title("Pre-Test")
+    st.subheader("Pedagogical Design Readiness Scale for AI-Supported Teaching")
+
+    student_code_instruction()
+
+    st.write(
+        """
+        Please complete the pre-test before beginning the module activities.
+        """
+    )
+
+    embed_form(PRETEST_URL, height=1400)
+
+
+# -------------------------------
+# Module 1
+# -------------------------------
+
+elif page == "Module 1: Objective Prompting":
+    st.title("Module 1: Context and Objective Prompting")
+
+    st.write(
+        """
+        This module will help you write structured AI prompts for generating learning objectives. 
+        A good prompt should clearly mention the class, subject, topic, learner level, duration, and expected learning outcome.
+        """
+    )
+
+    st.markdown("### Prompt Formula")
+    st.code(
+        "Act as a teacher educator. Prepare clear and measurable learning objectives for Class [Class] students "
+        "in the subject [Subject] on the topic [Topic]. The objectives should be suitable for a [Duration]-minute lesson "
+        "and should be aligned with Bloom’s Taxonomy. Consider the learner level as [Learner Level]."
+    )
+
+    st.markdown("### Example Prompt")
+    st.code(
+        "Act as a teacher educator. Prepare clear and measurable learning objectives for Class 8 students in Science "
+        "on the topic Photosynthesis. The objectives should be suitable for a 40-minute lesson and should be aligned "
+        "with Bloom’s Taxonomy. Consider the learner level as mixed ability."
+    )
+
+    module_form(
+        sheet_name="Module1_Objectives",
+        prompt_label="Your prompt for learning objectives",
+        ai_label="AI-generated objectives",
+        revised_label="Your revised objectives",
+        reflection_label="Reflection/Reason for Revision"
+    )
+
+
+# -------------------------------
+# Module 2
+# -------------------------------
+
+elif page == "Module 2: Activity Prompting":
+    st.title("Module 2: Activity Prompting")
+
+    st.write(
+        """
+        This module will help you write AI prompts for designing learner-centred teaching-learning activities. 
+        A good activity prompt should focus on participation, collaboration, questioning, conceptual understanding, 
+        and available classroom resources.
+        """
+    )
+
+    st.markdown("### Prompt Formula")
+    st.code(
+        "Act as a teacher educator. Suggest learner-centred teaching-learning activities for Class [Class] students "
+        "in the subject [Subject] on the topic [Topic]. The activities should encourage student participation, "
+        "collaboration, questioning, and conceptual understanding. The activity should be suitable for [Duration] minutes "
+        "and should use available resources such as [Resources]."
+    )
+
+    st.markdown("### Example Prompt")
+    st.code(
+        "Act as a teacher educator. Suggest learner-centred teaching-learning activities for Class 8 students in Science "
+        "on the topic Photosynthesis. The activities should encourage student participation, collaboration, questioning, "
+        "and conceptual understanding. The activity should be suitable for 20 minutes and should use available resources "
+        "such as blackboard, textbook, and worksheet."
+    )
+
+    module_form(
+        sheet_name="Module2_Activities",
+        prompt_label="Your prompt for teaching-learning activity",
+        ai_label="AI-generated activity",
+        revised_label="Your revised activity",
+        reflection_label="Reflection/Reason for Revision"
+    )
+
+
+# -------------------------------
+# Module 3
+# -------------------------------
+
+elif page == "Module 3: Assessment Prompting":
+    st.title("Module 3: Assessment Prompting")
+
+    st.write(
+        """
+        This module will help you write AI prompts for preparing assessment questions and tasks. 
+        A good assessment prompt should ask for questions that are aligned with learning objectives and suitable for the class level.
+        """
+    )
+
+    st.markdown("### Prompt Formula")
+    st.code(
+        "Act as a teacher educator. Prepare formative assessment tasks for Class [Class] students in the subject [Subject] "
+        "on the topic [Topic]. Include multiple-choice questions, short-answer questions, and one application-based question. "
+        "The questions should be aligned with the learning objectives and suitable for the learner level [Learner Level]. "
+        "Also provide answer keys or assessment criteria."
+    )
+
+    st.markdown("### Example Prompt")
+    st.code(
+        "Act as a teacher educator. Prepare formative assessment tasks for Class 8 students in Science on the topic "
+        "Photosynthesis. Include multiple-choice questions, short-answer questions, and one application-based question. "
+        "The questions should be aligned with the learning objectives and suitable for mixed-ability learners. "
+        "Also provide answer keys or assessment criteria."
+    )
+
+    module_form(
+        sheet_name="Module3_Assessment",
+        prompt_label="Your prompt for assessment tasks",
+        ai_label="AI-generated assessment tasks",
+        revised_label="Your revised assessment tasks",
+        reflection_label="Reflection/Reason for Revision"
+    )
+
+
+# -------------------------------
+# Module 4
+# -------------------------------
+
+elif page == "Module 4: Inclusive Prompting":
+    st.title("Module 4: Inclusive Prompting")
+
+    st.write(
+        """
+        This module will help you write AI prompts for adapting teaching-learning material for diverse learners. 
+        Inclusive prompting helps pre-service teachers consider slow learners, advanced learners, language needs, 
+        accessibility, and varied learning styles.
+        """
+    )
+
+    st.markdown("### Prompt Formula")
+    st.code(
+        "Act as an inclusive education expert. Adapt the teaching-learning activity for Class [Class] students "
+        "in the subject [Subject] on the topic [Topic]. Suggest modifications for slow learners, advanced learners, "
+        "students with language difficulty, and students with limited learning resources. The adaptation should be practical "
+        "and suitable for the classroom context."
+    )
+
+    st.markdown("### Example Prompt")
+    st.code(
+        "Act as an inclusive education expert. Adapt the teaching-learning activity for Class 8 students in Science "
+        "on the topic Photosynthesis. Suggest modifications for slow learners, advanced learners, students with language "
+        "difficulty, and students with limited learning resources. The adaptation should be practical and suitable for the classroom context."
+    )
+
+    module_form(
+        sheet_name="Module4_Inclusion",
+        prompt_label="Your prompt for inclusive adaptation",
+        ai_label="AI-generated inclusive adaptation",
+        revised_label="Your revised inclusive adaptation",
+        reflection_label="Reflection/Reason for Revision"
+    )
+
+
+# -------------------------------
+# Module 5
+# -------------------------------
+
+elif page == "Module 5: Ethical Verification":
+    st.title("Module 5: Ethical Verification and Reflective Revision")
+
+    st.write(
+        """
+        This module will help you verify AI-generated educational content before using it. 
+        AI output should not be copied directly. It should be checked for accuracy, bias, learner suitability, 
+        originality, and pedagogical appropriateness.
+        """
+    )
+
+    st.markdown("### Prompt Formula")
+    st.code(
+        "Act as a teacher educator and reviewer. Review the following AI-generated teaching material for factual accuracy, "
+        "bias, learner suitability, age-appropriateness, originality, and pedagogical alignment. Suggest corrections and improvements. "
+        "The material is for Class [Class], subject [Subject], topic [Topic]."
+    )
+
+    st.markdown("### Example Prompt")
+    st.code(
+        "Act as a teacher educator and reviewer. Review the following AI-generated teaching material for factual accuracy, "
+        "bias, learner suitability, age-appropriateness, originality, and pedagogical alignment. Suggest corrections and improvements. "
+        "The material is for Class 8, subject Science, topic Photosynthesis."
+    )
+
+    module_form(
+        sheet_name="Module5_Ethics",
+        prompt_label="Your prompt for ethical verification",
+        ai_label="AI-generated verification response",
+        revised_label="Corrections/Revisions made by you",
+        reflection_label="Reflection/Reason for Revision"
+    )
+
+
+# -------------------------------
+# Final Portfolio Page
+# -------------------------------
+
+elif page == "Final Portfolio":
+    st.title("Final Portfolio Submission")
+    st.subheader("AI-Supported Pedagogical Design Output")
+
+    student_code_instruction()
+
+    st.write(
+        """
+        You have completed all five AIP-SM modules. Now submit your final AI-supported pedagogical design portfolio. 
+        Combine your revised learning objectives, teaching-learning activity, assessment tasks, inclusive adaptation plan, 
+        ethical verification note, and final reflection.
+
+        Please ensure that the final output reflects your own pedagogical judgment and is not copied directly from AI-generated content.
+        """
+    )
+
+    with st.form(key="Final_Portfolio"):
+        student_code, programme, year, subject, topic = common_student_fields()
+
+        final_objectives = st.text_area("Final Learning Objectives", height=180)
+        final_activity = st.text_area("Final Teaching-Learning Activity", height=220)
+        final_assessment = st.text_area("Final Assessment Tasks", height=220)
+        inclusion_plan = st.text_area("Inclusive Adaptation Plan", height=200)
+        ethics_note = st.text_area("Ethical Verification Note", height=180)
+        final_reflection = st.text_area("Final Reflection", height=200)
+
+        submitted = st.form_submit_button("Submit Final Portfolio")
+
+        if submitted:
+            if not student_code or not subject or not topic:
+                st.error("Please fill Student Code, Subject, and Topic before submitting.")
+            else:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                row = [
+                    timestamp,
+                    student_code,
+                    programme,
+                    year,
+                    subject,
+                    topic,
+                    final_objectives,
+                    final_activity,
+                    final_assessment,
+                    inclusion_plan,
+                    ethics_note,
+                    final_reflection
+                ]
+
+                success, message = submit_to_google_sheet("Final_Portfolio", row)
+
+                if success:
+                    st.success("Your final portfolio has been saved successfully.")
+                else:
+                    st.error(message)
+
+
+# -------------------------------
+# Post-Test Page
+# -------------------------------
+
+elif page == "Post-Test":
+    st.title("Post-Test")
+    st.subheader("Pedagogical Design Readiness Scale for AI-Supported Teaching")
+
+    student_code_instruction()
+
+    st.write(
+        """
+        Please complete the post-test after completing all five modules and submitting the final portfolio.
+        """
+    )
+
+    embed_form(POSTTEST_URL, height=1400)
+
+
+# -------------------------------
+# Feedback Page
+# -------------------------------
+
+elif page == "Feedback":
+    st.title("Feedback Form")
+    st.subheader("Student Feedback on AIP-SM Dashboard")
+
+    student_code_instruction()
+
+    st.write(
+        """
+        Please complete the feedback form after finishing the post-test.
+        """
+    )
+
+    embed_form(FEEDBACK_URL, height=1200)
