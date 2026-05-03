@@ -15,8 +15,8 @@ st.set_page_config(
 
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyupggsoyQTDI_DI1hBduBOjjksaRaMJ5YM9T0bJtrB6fAjCp9I0JPJl-Qo4PBj1xtS/exec"
 
-PRETEST_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeiN0A4MueCQCgWq_dzEeUrquULAX8dIoGanSOKpigzLIHtqg/viewform?embedded=true"
-POSTTEST_URL = "https://docs.google.com/forms/d/e/1FAIpQLScQhRPS0Ah4XQwgvWPwo1KdwTK0SJYnaJX59geplh-siym5SA/viewform?embedded=true"
+INITIAL_READINESS_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeiN0A4MueCQCgWq_dzEeUrquULAX8dIoGanSOKpigzLIHtqg/viewform?embedded=true"
+FINAL_READINESS_URL = "https://docs.google.com/forms/d/e/1FAIpQLScQhRPS0Ah4XQwgvWPwo1KdwTK0SJYnaJX59geplh-siym5SA/viewform?embedded=true"
 FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfztEhAKjtwR658RyBHA3v39l_CT3yAUsF5wbG2dsXCOlW0kQ/viewform?embedded=true"
 
 
@@ -32,44 +32,72 @@ def submit_to_google_sheet(sheet_name, row):
 
     try:
         response = requests.post(APPS_SCRIPT_URL, json=payload, timeout=10)
+
         if response.status_code == 200:
-            return True, "Submitted successfully."
+            try:
+                result = response.json()
+                status = result.get("status", "")
+                message = result.get("message", "Submission processed.")
+
+                if status == "success":
+                    return True, message
+                elif status == "duplicate":
+                    return False, message
+                else:
+                    return False, message
+
+            except Exception:
+                return False, "Submission response could not be read properly."
+
         else:
             return False, f"Submission failed. Status code: {response.status_code}"
+
     except Exception as e:
         return False, f"Error: {e}"
 
 
-def student_code_instruction():
+def user_code_instruction():
     st.info(
         """
-        **Student Code Instruction**
+        **User Code Instruction**
 
-        Please create your Student Code using this format:
+        Please create your User Code using this format:
 
         **AIP + last five digits of your mobile number**
 
-        Example: If your mobile number ends with **78456**, your Student Code will be **AIP78456**.
+        Example: If your mobile number ends with **78456**, your User Code will be **AIP78456**.
 
-        Please use the same Student Code in the pre-test, all dashboard activities, final portfolio, post-test, and feedback form.
+        Please use the same User Code in the initial readiness check, all dashboard activities, final portfolio, 
+        final readiness reflection, and feedback form.
         """
     )
 
 
-def common_student_fields():
-    student_code = st.text_input("Student Code")
+def single_submission_instruction():
+    st.warning(
+        """
+        **Submission Rule**
+
+        Please submit each module only once. Multiple submissions using the same User Code in the same section are not allowed.
+        """
+    )
+
+
+def common_user_fields():
+    user_code = st.text_input("User Code")
     programme = st.selectbox("Programme", ["B.Ed.", "M.Ed.", "Other"])
     year = st.selectbox("Year", ["First Year", "Second Year", "Other"])
     subject = st.text_input("Teaching Subject")
     topic = st.text_input("Selected Topic")
-    return student_code, programme, year, subject, topic
+    return user_code, programme, year, subject, topic
 
 
 def module_form(sheet_name, prompt_label, ai_label, revised_label, reflection_label):
-    student_code_instruction()
+    user_code_instruction()
+    single_submission_instruction()
 
     with st.form(key=sheet_name):
-        student_code, programme, year, subject, topic = common_student_fields()
+        user_code, programme, year, subject, topic = common_user_fields()
 
         prompt = st.text_area(prompt_label, height=180)
         ai_response = st.text_area(ai_label, height=220)
@@ -79,13 +107,15 @@ def module_form(sheet_name, prompt_label, ai_label, revised_label, reflection_la
         submitted = st.form_submit_button("Submit")
 
         if submitted:
-            if not student_code or not subject or not topic:
-                st.error("Please fill Student Code, Subject, and Topic before submitting.")
+            if not user_code or not subject or not topic:
+                st.error("Please fill User Code, Subject, and Topic before submitting.")
+            elif not prompt or not ai_response or not revised_output:
+                st.error("Please fill Prompt, AI Response, and Revised Output before submitting.")
             else:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 row = [
                     timestamp,
-                    student_code,
+                    user_code.strip().upper(),
                     programme,
                     year,
                     subject,
@@ -139,15 +169,15 @@ page = st.sidebar.radio(
     "Go to",
     [
         "Home",
-        "Pre-Test",
+        "Initial Readiness Check",
         "Module 1: Objective Prompting",
         "Module 2: Activity Prompting",
         "Module 3: Assessment Prompting",
         "Module 4: Inclusive Prompting",
         "Module 5: Ethical Verification",
         "Final Portfolio",
-        "Post-Test",
-        "Feedback"
+        "Final Readiness Reflection",
+        "Dashboard Feedback"
     ]
 )
 
@@ -184,7 +214,7 @@ if page == "Home":
 
     st.info(
         """
-        This dashboard is intended for educational, training, and research purposes. Users are encouraged 
+        This dashboard is intended for educational, training, and academic purposes. Users are encouraged 
         to verify AI-generated content and apply their own pedagogical judgment before using it in academic 
         or classroom contexts.
         """
@@ -202,39 +232,47 @@ if page == "Home":
         - Inclusive prompting
         - Ethical verification and reflective revision
 
-        You will first complete the pre-test, then complete five modules, submit your final portfolio, 
-        complete the post-test, and finally submit the feedback form.
+        You will first complete the initial readiness check, then complete five modules, submit your final portfolio, 
+        complete the final readiness reflection, and finally submit the dashboard feedback form.
         """
     )
 
-    student_code_instruction()
+    user_code_instruction()
 
     st.warning(
         """
         Please complete the activities in sequence:
 
-        **Pre-Test → Module 1 → Module 2 → Module 3 → Module 4 → Module 5 → Final Portfolio → Post-Test → Feedback**
+        **Initial Readiness Check → Module 1 → Module 2 → Module 3 → Module 4 → Module 5 → Final Portfolio → Final Readiness Reflection → Dashboard Feedback**
         """
     )
 
 
 # -------------------------------
-# Pre-Test Page
+# Initial Readiness Check Page
 # -------------------------------
 
-elif page == "Pre-Test":
-    st.title("Pre-Test")
-    st.subheader("Pedagogical Design Readiness Scale for AI-Supported Teaching")
+elif page == "Initial Readiness Check":
+    st.title("Initial Readiness Check")
+    st.subheader("AI-Supported Teaching Readiness")
 
-    student_code_instruction()
+    user_code_instruction()
 
     st.write(
         """
-        Please complete the pre-test before beginning the module activities.
+        Before beginning the AIP-SM activities, please complete this short readiness check. It will help you reflect 
+        on your present understanding of AI-supported pedagogical design, lesson planning, assessment preparation, 
+        inclusive adaptation, and ethical verification of AI-generated educational content.
         """
     )
 
-    embed_form(PRETEST_URL, height=1600)
+    st.info(
+        """
+        There is no right or wrong answer. Please respond honestly based on your present understanding and experience.
+        """
+    )
+
+    embed_form(INITIAL_READINESS_URL, height=1600)
 
 
 # -------------------------------
@@ -440,7 +478,8 @@ elif page == "Final Portfolio":
     st.title("Final Portfolio Submission")
     st.subheader("AI-Supported Pedagogical Design Output")
 
-    student_code_instruction()
+    user_code_instruction()
+    single_submission_instruction()
 
     st.write(
         """
@@ -453,7 +492,7 @@ elif page == "Final Portfolio":
     )
 
     with st.form(key="Final_Portfolio"):
-        student_code, programme, year, subject, topic = common_student_fields()
+        user_code, programme, year, subject, topic = common_user_fields()
 
         final_objectives = st.text_area("Final Learning Objectives", height=180)
         final_activity = st.text_area("Final Teaching-Learning Activity", height=220)
@@ -465,13 +504,15 @@ elif page == "Final Portfolio":
         submitted = st.form_submit_button("Submit Final Portfolio")
 
         if submitted:
-            if not student_code or not subject or not topic:
-                st.error("Please fill Student Code, Subject, and Topic before submitting.")
+            if not user_code or not subject or not topic:
+                st.error("Please fill User Code, Subject, and Topic before submitting.")
+            elif not final_objectives or not final_activity or not final_assessment:
+                st.error("Please fill Final Learning Objectives, Final Teaching-Learning Activity, and Final Assessment Tasks before submitting.")
             else:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 row = [
                     timestamp,
-                    student_code,
+                    user_code.strip().upper(),
                     programme,
                     year,
                     subject,
@@ -493,37 +534,51 @@ elif page == "Final Portfolio":
 
 
 # -------------------------------
-# Post-Test Page
+# Final Readiness Reflection Page
 # -------------------------------
 
-elif page == "Post-Test":
-    st.title("Post-Test")
-    st.subheader("Pedagogical Design Readiness Scale for AI-Supported Teaching")
+elif page == "Final Readiness Reflection":
+    st.title("Final Readiness Reflection")
+    st.subheader("AI-Supported Teaching Readiness")
 
-    student_code_instruction()
+    user_code_instruction()
 
     st.write(
         """
-        Please complete the post-test after completing all five modules and submitting the final portfolio.
+        After completing all AIP-SM modules and submitting your final portfolio, please complete this final readiness reflection. 
+        It will help you reflect on your learning, confidence, and readiness in using AI for pedagogical design.
         """
     )
 
-    embed_form(POSTTEST_URL, height=1600)
+    st.info(
+        """
+        There is no right or wrong answer. Please respond based on your present understanding and experience after completing the dashboard activities.
+        """
+    )
+
+    embed_form(FINAL_READINESS_URL, height=1600)
 
 
 # -------------------------------
-# Feedback Page
+# Dashboard Feedback Page
 # -------------------------------
 
-elif page == "Feedback":
-    st.title("Feedback Form")
-    st.subheader("Student Feedback on AIP-SM Dashboard")
+elif page == "Dashboard Feedback":
+    st.title("Dashboard Feedback")
+    st.subheader("AIP-SM Dashboard Experience")
 
-    student_code_instruction()
+    user_code_instruction()
 
     st.write(
         """
-        Please complete the feedback form after finishing the post-test.
+        Please complete this feedback form after finishing the final readiness reflection. Your feedback will help improve 
+        the AIP-SM Dashboard for educational, training, workshop, online learning, and academic purposes.
+        """
+    )
+
+    st.info(
+        """
+        Please select the response that best represents your experience with the dashboard.
         """
     )
 
