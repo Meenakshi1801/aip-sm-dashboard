@@ -104,8 +104,29 @@ def module_form(sheet_name, prompt_label, ai_label, revised_label, reflection_la
                     st.error(message)
 
 
-def embed_form(url, height=1200):
+def embed_form(url, height=1400):
     components.iframe(url, height=height, scrolling=True)
+
+
+def developer_section():
+    col1, col2 = st.columns([1, 4])
+
+    with col1:
+        try:
+            st.image("profile.jpg", width=150)
+        except Exception:
+            st.warning("Profile photo not found. Please upload profile.jpg to GitHub repository.")
+
+    with col2:
+        st.markdown(
+            """
+            ### Conceptualized and Developed by  
+            **Dr. Meenakshi Dwivedi**  
+            Assistant Professor  
+            Department of Education / School of Education  
+            Mahatma Jyotiba Phule Rohilkhand University, Bareilly, Uttar Pradesh, India
+            """
+        )
 
 
 # -------------------------------
@@ -139,10 +160,39 @@ if page == "Home":
     st.title("AIP-SM Dashboard")
     st.subheader("AI Prompt Scaffolding Model for Pedagogical Design Readiness")
 
-    st.write(
+    developer_section()
+
+    st.markdown("---")
+
+    st.markdown(
         """
-        Welcome to the AIP-SM Dashboard. This dashboard is designed to help pre-service teachers learn how to use AI tools 
-        meaningfully for pedagogical design.
+        ### Purpose of the Dashboard
+
+        The **AIP-SM Dashboard** is a web-based learning and practice platform designed to support 
+        pre-service teachers, teacher educators, and students in developing responsible AI-supported 
+        pedagogical design skills.
+
+        The dashboard may be used for:
+
+        - academic training,
+        - teacher-education workshops,
+        - online learning activities,
+        - AI-supported lesson design practice,
+        - and research-based intervention studies.
+        """
+    )
+
+    st.info(
+        """
+        This dashboard is intended for educational, training, and research purposes. Users are encouraged 
+        to verify AI-generated content and apply their own pedagogical judgment before using it in academic 
+        or classroom contexts.
+        """
+    )
+
+    st.markdown(
+        """
+        ### Dashboard Activities
 
         Through this dashboard, you will complete module-wise activities related to:
 
@@ -152,8 +202,8 @@ if page == "Home":
         - Inclusive prompting
         - Ethical verification and reflective revision
 
-        You will first complete the pre-test, then complete five modules, submit your final portfolio, complete the post-test, 
-        and finally submit the feedback form.
+        You will first complete the pre-test, then complete five modules, submit your final portfolio, 
+        complete the post-test, and finally submit the feedback form.
         """
     )
 
@@ -184,7 +234,7 @@ elif page == "Pre-Test":
         """
     )
 
-    embed_form(PRETEST_URL, height=1400)
+    embed_form(PRETEST_URL, height=1600)
 
 
 # -------------------------------
@@ -197,7 +247,8 @@ elif page == "Module 1: Objective Prompting":
     st.write(
         """
         This module will help you write structured AI prompts for generating learning objectives. 
-        A good prompt should clearly mention the class, subject, topic, learner level, duration, and expected learning outcome.
+        A good prompt should clearly mention the class, subject, topic, learner level, duration, 
+        and expected learning outcome.
         """
     )
 
@@ -274,7 +325,8 @@ elif page == "Module 3: Assessment Prompting":
     st.write(
         """
         This module will help you write AI prompts for preparing assessment questions and tasks. 
-        A good assessment prompt should ask for questions that are aligned with learning objectives and suitable for the class level.
+        A good assessment prompt should ask for questions that are aligned with learning objectives 
+        and suitable for the class level.
         """
     )
 
@@ -456,7 +508,7 @@ elif page == "Post-Test":
         """
     )
 
-    embed_form(POSTTEST_URL, height=1400)
+    embed_form(POSTTEST_URL, height=1600)
 
 
 # -------------------------------
@@ -475,4 +527,4 @@ elif page == "Feedback":
         """
     )
 
-    embed_form(FEEDBACK_URL, height=1200)
+    embed_form(FEEDBACK_URL, height=1400)
