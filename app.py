@@ -15,9 +15,15 @@ st.set_page_config(
 
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyupggsoyQTDI_DI1hBduBOjjksaRaMJ5YM9T0bJtrB6fAjCp9I0JPJl-Qo4PBj1xtS/exec"
 
+# Embedded Google Form URLs
 INITIAL_READINESS_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeiN0A4MueCQCgWq_dzEeUrquULAX8dIoGanSOKpigzLIHtqg/viewform?embedded=true"
 FINAL_READINESS_URL = "https://docs.google.com/forms/d/e/1FAIpQLScQhRPS0Ah4XQwgvWPwo1KdwTK0SJYnaJX59geplh-siym5SA/viewform?embedded=true"
 FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfztEhAKjtwR658RyBHA3v39l_CT3yAUsF5wbG2dsXCOlW0kQ/viewform?embedded=true"
+
+# Direct Google Form Links
+INITIAL_READINESS_DIRECT_URL = "https://forms.gle/ZBRPQx2NQLcWdLCx5"
+FINAL_READINESS_DIRECT_URL = "https://forms.gle/UZzoX4ArPU3FsK2T6"
+FEEDBACK_DIRECT_URL = "https://forms.gle/6ruZCbMsRB5fXX4y6"
 
 
 # -------------------------------
@@ -136,6 +142,30 @@ def module_form(sheet_name, prompt_label, ai_label, revised_label, reflection_la
 
 def embed_form(url, height=1400):
     components.iframe(url, height=height, scrolling=True)
+
+
+def form_with_backup_button(embed_url, direct_url, button_text, height=1600):
+    st.info(
+        """
+        If the form does not open properly on your mobile device, please use the button below to open it directly.
+        """
+    )
+
+    st.link_button(button_text, direct_url)
+
+    st.markdown("---")
+
+    embed_form(embed_url, height=height)
+
+    st.markdown("---")
+
+    st.info(
+        """
+        If the embedded form above is not visible due to browser/cookie restrictions, please use the direct button below.
+        """
+    )
+
+    st.link_button(button_text, direct_url)
 
 
 def developer_section():
@@ -272,7 +302,12 @@ elif page == "Initial Readiness Check":
         """
     )
 
-    embed_form(INITIAL_READINESS_URL, height=1600)
+    form_with_backup_button(
+        embed_url=INITIAL_READINESS_URL,
+        direct_url=INITIAL_READINESS_DIRECT_URL,
+        button_text="Open AI-Supported Teaching Readiness Form",
+        height=1600
+    )
 
 
 # -------------------------------
@@ -556,7 +591,12 @@ elif page == "Final Readiness Reflection":
         """
     )
 
-    embed_form(FINAL_READINESS_URL, height=1600)
+    form_with_backup_button(
+        embed_url=FINAL_READINESS_URL,
+        direct_url=FINAL_READINESS_DIRECT_URL,
+        button_text="Open Final Readiness Reflection Form",
+        height=1600
+    )
 
 
 # -------------------------------
@@ -582,4 +622,9 @@ elif page == "Dashboard Feedback":
         """
     )
 
-    embed_form(FEEDBACK_URL, height=1400)
+    form_with_backup_button(
+        embed_url=FEEDBACK_URL,
+        direct_url=FEEDBACK_DIRECT_URL,
+        button_text="Open Dashboard Feedback Form",
+        height=1400
+    )
